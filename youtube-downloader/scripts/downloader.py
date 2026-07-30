@@ -146,16 +146,11 @@ def download_transcript(url: str, language: str|None = None, output_dir: str|Pat
         current_text = []
         for line in srt_lines:
             line = line.rstrip("\n")
-            if re.match(index_pattern, line):
-                continue
-            if re.match(interval_pattern, line):
-                continue
-            if not line:
-                if current_text:
-                    f.write(" ".join(current_text) + "\n")
-                    current_text = []
-                continue
-            current_text.append(line)
+            if line and not (re.match(index_pattern, line) or re.match(interval_pattern, line)):
+                current_text.append(line)
+            elif current_text:
+                f.write(" ".join(current_text) + "\n")
+                current_text = []
         if current_text:
             f.write(" ".join(current_text) + "\n")
 
