@@ -125,12 +125,3 @@ Results are reported per-URL once all downloads are complete:
 [ERROR] {url}  with error  {error}
 ...
 ```
-
-
-## Dependencies
-
-- `yt-dlp`: Download videos, audios, and subtitles
-- `ffmpeg`: Audio/video processing (required by yt-dlp for format conversion)
-- `python3`: Standard library
-
-All scripts are self-contained and use only built-in Python modules, using `subprocess` to run `yt-dlp` commands.
