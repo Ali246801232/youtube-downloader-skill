@@ -32,11 +32,40 @@ def get_video_info(url: str) -> dict:
     return json.loads(result.stdout)
 
 
-# TODO: Re-implement
 @with_retry()
 def download_video(url: str, file_format: str = "mp4", quality: str = "best", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download a YouTube video and return the file's path."""
-    pass
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    p_pattern = r"^(144|240|360|480|540|720|1080|1440|2160|4320)p$"
+    k_pattern = r"^(2|4|8)k$"
+    k_to_p = {"2": "1440", "4": "2160", "8": "4320"}
+
+    quality = quality.strip().lower()
+    if quality == "best":
+        format_filter = f"bv*[ext={file_format}]+ba / bv*+ba / best"
+    elif re.match(p_pattern, quality, re.IGNORECASE):
+        height = quality[:-1]
+        format_filter = f"bv*[ext={file_format}][height<={height}]+ba / bv*[height<={height}]+ba / best[height<={height}]"
+    elif re.match(k_pattern, quality, re.IGNORECASE):
+        height = k_to_p[quality[:-1]]
+        format_filter = f"bv*[ext={file_format}][height<={height}]+ba / bv*[height<={height}]+ba / best[height<={height}]"
+    else:
+        raise ValueError(f"Invalid quality: {quality}")
+
+    result = _run_yt_dlp([
+        "-o", f"{output_dir}/%(title)s.%(ext)s",
+        "-f", format_filter,
+        "--merge-output-format", file_format,
+        "--print", "after_move:filepath",
+        "--no-warnings",
+        url,
+    ])
+    
+    filepath = Path(result.stdout.strip())
+
+    return filepath
 
 
 # TODO: Re-implement
