@@ -68,11 +68,26 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", la
     return filepath
 
 
-# TODO: Re-implement
 @with_retry()
 def download_audio(url: str, file_format: str = "mp3", quality: str = "192K", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download the audio of a YouTube video and return the file's path."""
-    pass
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    result = _run_yt_dlp([
+        "-x"
+        "-o", f"{output_dir}/%(title)s.%(ext)s",
+        "-f", f"ba[ext={file_format}] / ba / best",
+        "--audio-format", file_format,
+        "--audio-quality", quality,
+        "--print", "after_move:filepath",
+        "--no-warnings",
+        url,
+    ])
+    
+    filepath = Path(result.stdout.strip())
+
+    return filepath
 
 
 @with_retry()
