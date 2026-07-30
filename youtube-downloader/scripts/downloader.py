@@ -20,7 +20,8 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
             check=True,
         )
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Error running yt-dlp command: {e.stderr.strip() or e.stdout.strip()}") from e
+        msg = (e.stderr.strip() or e.stdout.strip()).replace("Usage: yt-dlp [OPTIONS] URL [URL...]\n", "").strip()
+        raise RuntimeError(f"Error running yt-dlp command: {msg}") from e
     except FileNotFoundError as e:
         raise RuntimeError("yt-dlp is not installed") from e
 
