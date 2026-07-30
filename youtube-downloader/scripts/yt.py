@@ -133,7 +133,7 @@ def main():
     p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
     p.add_argument("--max-workers", "-w", help="Maximum number of downloads in parallel at once (default=5)")
 
-    p = subparsers.add_parser("transcript", help="Download transcripts for one or more YouTube videos in parallel")
+    p = subparsers.add_parser("transcript", help="Download plain-text transcripts for one or more YouTube videos in parallel")
     p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
     p.add_argument("--language", "-l", help="Language code: en, en.GB, jp, etc. (default: auto-detect primary language from video)")
     p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
