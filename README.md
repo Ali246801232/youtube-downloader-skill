@@ -1,6 +1,6 @@
 # YouTube Downloader Skill
 
-An AI agent skill for downloading videos, audio, subtitles, and transcripts from YouTube using `yt-dlp`.
+An AI agent skill for downloading videos, audio, subtitles, and transcripts from YouTube using yt-dlp and FFmpeg.
 
 ## Features
 
