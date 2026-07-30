@@ -41,7 +41,7 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", la
 
 # TODO: Re-implement
 @with_retry()
-def download_audio(url: str, quality: str = "192K", language: str|None = None, file_format: str = "mp3", output_dir: str|Path = ".") -> Path:
+def download_audio(url: str, file_format: str = "mp3", quality: str = "192K", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download the audio of a YouTube video and return the file's path."""
     pass
 
@@ -49,41 +49,37 @@ def download_audio(url: str, quality: str = "192K", language: str|None = None, f
 @with_retry()
 def download_subtitles(url: str, file_format: str = "srt", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download the subtitles of a YouTube video and return the file's path."""
-    video_info = get_video_info(url)
-    video_title = _sanitize_title(video_info.get("title"))
-    video_id = video_info.get("id")
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
+    video_info = get_video_info(url)
     language = (language if language is not None else video_info.get("language")) or "en"
     manual_subs = video_info.get("subtitles", {})
     automatic_subs = video_info.get("automatic_captions", {})
-    if manual_subs:
-        has_manual = True
-        if language in manual_subs:
-            matching = language
-        else:
-            matching = next((lang for lang in manual_subs if lang.startswith(language)), None)
-        output_path = Path(output_dir) / f"{video_title}.from_manual_subs"
-    elif automatic_subs:
-        has_manual = False
-        if language in automatic_subs:
-            matching = language
-        else:
-            matching = next((lang for lang in automatic_subs if lang.startswith(language)), None)
-        output_path = Path(output_dir) / f"{video_title}.from_automatic_subs"
+    if subs := manual_subs or automatic_subs:
+        matching = next((lang for lang in subs if lang.startswith(language)), None)
     else:
+        video_title = video_info.get("title")
+        video_id = video_info.get("id")
         raise RuntimeError(f"Video does not have subtitles: {video_title} [{video_id}]")
 
-    _run_yt_dlp([
-        "--write-subs" if has_manual else "--write-auto-subs",
+    result = _run_yt_dlp([
+        "-o", f"subtitle:{output_dir}/%(title)s.%(ext)s",
+        "--write-subs" if manual_subs else "--write-auto-subs",
         "--sub-langs", matching,
+        "--sub-format", f"{file_format}/best",
         "--convert-subs", file_format,
+        "--print", "%(title)s",
         "--skip-download",
-        "-o", f"{output_path}.%(ext)s",
         "--no-warnings",
         url,
     ])
 
-    return output_path.with_name(f"{output_path.name}.{matching}.{file_format}")
+    title = result.stdout.strip()
+    filename = f"{title}.{matching}.{file_format}"
+    filepath = Path(output_dir) / filename
+
+    return filepath
 
 
 @with_retry()
