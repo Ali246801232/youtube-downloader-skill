@@ -70,10 +70,13 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", ou
 
 
 @with_retry()
-def download_audio(url: str, file_format: str = "mp3", quality: str = "192K", output_dir: str|Path = ".") -> Path:
+def download_audio(url: str, file_format: str = "mp3", quality: str = "best", output_dir: str|Path = ".") -> Path:
     """Download the audio of a YouTube video and return the file's path."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    if quality == "best":
+        quality = "0"
 
     result = _run_yt_dlp([
         "-x",

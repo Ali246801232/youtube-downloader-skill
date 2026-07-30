@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 _VIDEO_URL_PATTERN = re.compile(
-    r"(?:https?:\/\/)?"                  # https://, http://, ://
+    r"(?:https?:\/\/)?"                  # https://, http://
     r"(?:"                               # (
         r"(?:www\.|m\.)?youtube\.com\/"  #     www.youtube.com/, m.youtube.com/
         r"(?:"                           #     (
@@ -25,7 +25,7 @@ _VIDEO_URL_PATTERN = re.compile(
 )
 
 _PLAYLIST_URL_PATTERN = re.compile(
-    r"(?:https?:\/\/)?"                   # https://, http://, ://
+    r"(?:https?:\/\/)?"                   # https://, http://
     r"(?:"                                # (
         r"(?:www\.|m\.)?youtube\.com\/"   #     www.youtube.com/, m.youtube.com/
         r"playlist\?(?:[^&\s]*&)*?list="  #     playlist?list=, playlist?[other query parameters]list=
