@@ -48,6 +48,9 @@ def parallel_download(urls: list[str], func: Callable[[str], object|None], max_w
         except Exception as e:
             return Result(url=url, success=False, error=e)
     
+    if len(urls) == 1:
+        return [download(urls[0])]
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(download, url) for url in urls]
         for future in concurrent.futures.as_completed(futures):
