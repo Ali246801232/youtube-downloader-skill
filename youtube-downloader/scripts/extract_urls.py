@@ -8,29 +8,28 @@ from pathlib import Path
 
 _VIDEO_URL_PATTERN = re.compile(
     r"(?:https?:\/\/)?"                  # https://, http://, ://
-
-    r"(?:"
+    r"(?:"                               # (
         r"(?:www\.|m\.)?youtube\.com\/"  #     www.youtube.com/, m.youtube.com/
-        r"(?:"
+        r"(?:"                           #     (
             r"watch\?(?:[^&\s]*&)*?v="   #         watch?v=, watch?[other query parameters]v=
-            r"|"
+            r"|"                         #         or
             r"shorts\/"                  #         shorts/
-            r"|"
+            r"|"                         #         or
             r"v\/"                       #         v/
-        r")"
-        r"|"
+        r")"                             #     )
+        r"|"                             #     or
         r"youtu\.be\/"                   #     youtu.be/
-    r")"
+    r")"                                 # )
     r"([a-zA-Z0-9_-]{11})"               # video ID (capturing group 1)
     r"(?:[?&]\S*)?"                      # other query parameters
 )
 
 _PLAYLIST_URL_PATTERN = re.compile(
     r"(?:https?:\/\/)?"                   # https://, http://, ://
-    r"(?:"
+    r"(?:"                                # (
         r"(?:www\.|m\.)?youtube\.com\/"   #     www.youtube.com/, m.youtube.com/
         r"playlist\?(?:[^&\s]*&)*?list="  #     playlist?list=, playlist?[other query parameters]list=
-    r")"
+    r")"                                  # )
     r"([a-zA-Z0-9_-]+)"                   # playlist ID (capturing group 1)
     r"(?:[?&]\S*)?"                       # other query parameters
 )

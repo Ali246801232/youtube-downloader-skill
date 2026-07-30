@@ -11,27 +11,6 @@ from pathlib import Path
 from parallel_download import with_retry
 
 
-# TODO: Move into download_video
-def _map_quality(quality: str) -> str:
-    """Return the yt-dlp option for a given video quality."""
-    p_pattern = r"^(144|240|360|480|540|720|1080|1440|2160|4320)p$"
-    k_pattern = r"^(2|4|8)k$"
-    k_to_p = {"2": "1440", "4": "2160", "8": "4320"}
-
-    quality = quality.strip().lower()
-
-    if quality == "best":
-        return "best"
-    elif quality == "worst":
-        return "worst"
-    elif re.match(p_pattern, quality, re.IGNORECASE):
-        height = quality[:-1]
-    elif re.match(k_pattern, quality, re.IGNORECASE):
-        height = k_to_p[quality[:-1]]
-    else:
-        raise ValueError(f"Invalid quality: {quality}")
-
-
 def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
     """Run yt-dlp with the given arguments and return the result."""
     try:
@@ -47,19 +26,6 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
         raise RuntimeError("yt-dlp is not installed") from e
 
 
-def _sanitize_title(title: str) -> str:
-    """Return """
-    sanitized = title
-    sanitized = unicodedata.normalize("NFKD", sanitized).encode("ascii", "ignore").decode("ascii")
-    sanitized = re.sub(r"[\/\\:*?\"<>|]", " ", sanitized)
-    sanitized = re.sub(r"[^a-zA-Z0-9._\s-]", "", sanitized)
-    sanitized = re.sub(r"[\s-]+", "_", sanitized)
-    sanitized = sanitized.strip("_. ")
-    if not sanitized:
-        return "untitled"
-    return sanitized
-
-
 def get_video_info(url: str) -> dict:
     """Return a YouTube video's information as a dict, or a specific field from it."""
     result = _run_yt_dlp(["--dump-json", url])
@@ -68,7 +34,7 @@ def get_video_info(url: str) -> dict:
 
 # TODO: Re-implement
 @with_retry()
-def download_video(url: str, quality: str = "best", language: str|None = None, file_format: str = "mp4", output_dir: str|Path = ".") -> Path:
+def download_video(url: str, file_format: str = "mp4", quality: str = "best", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download a YouTube video and return the file's path."""
     pass
 
@@ -81,7 +47,7 @@ def download_audio(url: str, quality: str = "192K", language: str|None = None, f
 
 
 @with_retry()
-def download_subtitles(url: str, language: str|None = None, file_format: str = "srt", output_dir: str|Path = ".") -> Path:
+def download_subtitles(url: str, file_format: str = "srt", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download the subtitles of a YouTube video and return the file's path."""
     video_info = get_video_info(url)
     video_title = _sanitize_title(video_info.get("title"))
@@ -125,7 +91,6 @@ def download_transcript(url: str, language: str|None = None, output_dir: str|Pat
     """Download a plain-text transcript from a YouTube video."""
     with tempfile.TemporaryDirectory() as tmpdir:
         srt_path = download_subtitles(url, output_dir=tmpdir, language=language, file_format="srt")
-
         with open(srt_path, encoding="utf-8") as f:
             srt_lines = f.readlines()
 
