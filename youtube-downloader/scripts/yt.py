@@ -111,14 +111,12 @@ def main():
     p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
     p.add_argument("--file-format", "-f", default="mp4", help="Video file format: mp4, webm, mkv, etc. (default: mp4)")
     p.add_argument("--quality", "-q", default="best", help="Video quality: best, 720p, 1080p, 4k, etc. (default: best)")
-    p.add_argument("--language", "-l", help="Language code for audio stream if multiple: en, en.GB, jp, etc. (default: auto-detect primary/only from video)")
     p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
 
     p = subparsers.add_parser("audio", help="Download audio from one or more YouTube videos in parallel")
     p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
     p.add_argument("--file-format", "-f", default="mp3", help="Audio file format: mp3, m4a, wav, etc. (default: mp3)")
     p.add_argument("--quality", "-q", default="192K", help="Audio quality: 128K, 192K, 256K, 320K, best, etc. (default: 192K)")
-    p.add_argument("--language", "-l", help="Language code for audio stream if multiple: en, en.GB, jp, etc. (default: auto-detect primary/only from video)")
     p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
 
     p = subparsers.add_parser("subtitles", help="Download subtitles from one or more YouTube videos in parallel")

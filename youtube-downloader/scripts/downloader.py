@@ -5,7 +5,6 @@ import re
 import json
 import tempfile
 import subprocess
-import unicodedata
 from pathlib import Path
 
 from parallel_download import with_retry
@@ -33,7 +32,7 @@ def get_video_info(url: str) -> dict:
 
 
 @with_retry()
-def download_video(url: str, file_format: str = "mp4", quality: str = "best", language: str|None = None, output_dir: str|Path = ".") -> Path:
+def download_video(url: str, file_format: str = "mp4", quality: str = "best", output_dir: str|Path = ".") -> Path:
     """Download a YouTube video and return the file's path."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -55,7 +54,8 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", la
         raise ValueError(f"Invalid quality: {quality}")
 
     result = _run_yt_dlp([
-        "-o", f"{output_dir}/%(title)s.%(ext)s",
+        "-P", str(output_dir),
+        "-o", f"%(title)s.%(ext)s",
         "-f", format_filter,
         "--merge-output-format", file_format,
         "--print", "after_move:filepath",
@@ -69,14 +69,15 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", la
 
 
 @with_retry()
-def download_audio(url: str, file_format: str = "mp3", quality: str = "192K", language: str|None = None, output_dir: str|Path = ".") -> Path:
+def download_audio(url: str, file_format: str = "mp3", quality: str = "192K", output_dir: str|Path = ".") -> Path:
     """Download the audio of a YouTube video and return the file's path."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     result = _run_yt_dlp([
-        "-x"
-        "-o", f"{output_dir}/%(title)s.%(ext)s",
+        "-x",
+        "-P", str(output_dir),
+        "-o", f"%(title)s.%(ext)s",
         "-f", f"ba[ext={file_format}] / ba / best",
         "--audio-format", file_format,
         "--audio-quality", quality,
@@ -103,17 +104,17 @@ def download_subtitles(url: str, file_format: str = "srt", language: str|None = 
     if subs := manual_subs or automatic_subs:
         matching = next((lang for lang in subs if lang.startswith(language)), None)
     else:
-        video_title = video_info.get("title")
-        video_id = video_info.get("id")
-        raise RuntimeError(f"Video does not have subtitles: {video_title} [{video_id}]")
+        raise RuntimeError(f"Video does not have subtitles: {url}")
 
     result = _run_yt_dlp([
-        "-o", f"subtitle:{output_dir}/%(title)s.%(ext)s",
+        "-P", f"subtitle:{output_dir}",
+        "-o", f"subtitle:%(title)s.%(ext)s",
         "--write-subs" if manual_subs else "--write-auto-subs",
         "--sub-langs", matching,
         "--sub-format", f"{file_format}/best",
         "--convert-subs", file_format,
         "--print", "%(title)s",
+        "--no-simulate",
         "--skip-download",
         "--no-warnings",
         url,

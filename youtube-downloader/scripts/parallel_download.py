@@ -43,7 +43,7 @@ def parallel_download(urls: list[str], func: Callable[[str], object|None], max_w
     
     def download(url: str) -> Result:
         try:
-            filepath = func(url)
+            filepath = func(url).resolve()
             return Result(url=url, success=True, filepath=filepath)
         except Exception as e:
             return Result(url=url, success=False, error=e)
