@@ -7,6 +7,7 @@ import tempfile
 import subprocess
 from pathlib import Path
 
+from extract_urls import find_video_urls, find_playlist_urls, find_channel_urls
 from parallel_download import with_retry
 
 
@@ -26,15 +27,24 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
         raise RuntimeError("yt-dlp is not installed") from e
 
 
-def get_video_info(url: str) -> dict:
-    """Return a YouTube video's information as a dict, or a specific field from it."""
-    result = _run_yt_dlp(["--dump-json", url])
-    return json.loads(result.stdout)
+def get_info(url: str) -> dict:
+    """Return a YouTube video, playlist, or channel URL's metadata as a dict."""
+    if match := find_video_urls(url, fullmatch=True):
+        return json.loads(_run_yt_dlp(["--dump-json", match]).stdout)
+    elif match := find_playlist_urls(url, fullmatch=True):
+        return json.loads(_run_yt_dlp(["--dump-single-json", "--flat-playlist", match]).stdout)
+    elif match := find_channel_urls(url, fullmatch=True):
+        return json.loads(_run_yt_dlp(["--dump-single-json", match]).stdout)
+    else:
+        raise ValueError(f"{url} is not a YouTube video, playlist, or channel URL")
 
 
 @with_retry()
 def download_video(url: str, file_format: str = "mp4", quality: str = "best", output_dir: str|Path = ".") -> Path:
     """Download a YouTube video and return the file's path."""
+    if not (url := find_video_urls(url, fullmatch=True)):
+        raise ValueError(f"{url} is not a YouTube video URL")
+    
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -45,10 +55,10 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", ou
     quality = quality.strip().lower()
     if quality == "best":
         format_filter = f"bv*[ext={file_format}]+ba / bv*+ba / best"
-    elif re.match(p_pattern, quality, re.IGNORECASE):
+    elif re.match(p_pattern, quality, flags=re.IGNORECASE):
         height = quality[:-1]
         format_filter = f"bv*[ext={file_format}][height<={height}]+ba / bv*[height<={height}]+ba / best[height<={height}]"
-    elif re.match(k_pattern, quality, re.IGNORECASE):
+    elif re.match(k_pattern, quality, flags=re.IGNORECASE):
         height = k_to_p[quality[:-1]]
         format_filter = f"bv*[ext={file_format}][height<={height}]+ba / bv*[height<={height}]+ba / best[height<={height}]"
     else:
@@ -72,6 +82,9 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", ou
 @with_retry()
 def download_audio(url: str, file_format: str = "mp3", quality: str = "best", output_dir: str|Path = ".") -> Path:
     """Download the audio of a YouTube video and return the file's path."""
+    if not (url := find_video_urls(url, fullmatch=True)):
+        raise ValueError(f"{url} is not a YouTube video URL")
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -98,10 +111,13 @@ def download_audio(url: str, file_format: str = "mp3", quality: str = "best", ou
 @with_retry()
 def download_subtitles(url: str, file_format: str = "srt", language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download the subtitles of a YouTube video and return the file's path."""
+    if not (url := find_video_urls(url, fullmatch=True)):
+        raise ValueError(f"{url} is not a YouTube video URL")
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    video_info = get_video_info(url)
+    video_info = get_info(url)
     language = (language if language is not None else video_info.get("language")) or "en"
     manual_subs = video_info.get("subtitles", {})
     automatic_subs = video_info.get("automatic_captions", {})
@@ -134,6 +150,9 @@ def download_subtitles(url: str, file_format: str = "srt", language: str|None = 
 @with_retry()
 def download_transcript(url: str, language: str|None = None, output_dir: str|Path = ".") -> Path:
     """Download a plain-text transcript from a YouTube video."""
+    if not (url := find_video_urls(url, fullmatch=True)):
+        raise ValueError(f"{url} is not a YouTube video URL")
+
     with tempfile.TemporaryDirectory() as tmpdir:
         srt_path = download_subtitles(url, output_dir=tmpdir, language=language, file_format="srt")
         with open(srt_path, encoding="utf-8") as f:
