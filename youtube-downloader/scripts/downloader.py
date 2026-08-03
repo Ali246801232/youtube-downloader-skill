@@ -30,7 +30,7 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
 def get_info(url: str) -> dict:
     """Return a YouTube video, playlist, or channel URL's metadata as a dict."""
     if match := find_video_urls(url, fullmatch=True):
-        return json.loads(_run_yt_dlp(["--dump-json", match]).stdout)
+        return json.loads(_run_yt_dlp(["--dump-json", "--write-auto-subs", match]).stdout)
     elif match := find_playlist_urls(url, fullmatch=True):
         return json.loads(_run_yt_dlp(["--dump-single-json", "--flat-playlist", match]).stdout)
     elif match := find_channel_urls(url, fullmatch=True):
