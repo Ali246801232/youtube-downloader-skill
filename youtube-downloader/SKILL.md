@@ -31,9 +31,9 @@ This will output if all dependencies are installed. Otherwise, it will output wh
 For concrete examples of usage for the commands mentioned in each workflow, refer to [references/examples.md](./references/examples.md). You can also run `--help` for any subcommand.
 
 
-### Displaying video information
+### Getting metadata
 
-Use this when you need the metadata of a video, or a specific field from it.
+Use this when you need the metadata of a video, playlist or channel, or a specific field from it.
 
 Command:
 ```
@@ -85,7 +85,7 @@ python scripts/yt.py subtitles <urls> [options]
 
 Options:
 - `--file-format`: Subtitles file format: `srt`, `vtt`, `ttml`, etc. (default: `srt`)
-- `--language`: Language code: `en`, `en.GB`, `jp`, etc. (default: auto-detect primary language from video)
+- `--language`: Language code: `en`, `en-GB`, `ja`, etc. (default: auto-detect primary language from video)
 - `--outout-dir`: `--outout-dir`: Output directory (default: `.`)
 
 
@@ -99,7 +99,7 @@ python scripts/yt.py transcript <urls> [options]
 ```
 
 Options:
-- `--language`: Language code: `en`, `en.GB`, `jp`, etc. (default: auto-detect primary language from video)
+- `--language`: Language code: `en`, `en-GB`, `ja`, etc. (default: auto-detect primary language from video)
 - `--outout-dir`: `--outout-dir`: Output directory (default: `.`)
 
 
