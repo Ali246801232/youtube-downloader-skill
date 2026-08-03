@@ -24,7 +24,7 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
         msg = (e.stderr.strip() or e.stdout.strip()).replace("Usage: yt-dlp [OPTIONS] URL [URL...]\n", "").strip()
         raise RuntimeError(f"Error running yt-dlp command: {msg}") from e
     except FileNotFoundError as e:
-        raise RuntimeError("yt-dlp is not installed") from e
+        raise FileNotFoundError("yt-dlp is not installed") from e
 
 
 def get_info(url: str) -> dict:
@@ -39,7 +39,7 @@ def get_info(url: str) -> dict:
         raise ValueError(f"{url} is not a YouTube video, playlist, or channel URL")
 
 
-@with_retry()
+@with_retry(retry_on_exceptions=[RuntimeError])
 def download_video(url: str, file_format: str = "mp4", quality: str = "best", output_dir: str|Path = ".") -> Path:
     """Download a YouTube video and return the file's path."""
     if not (url := find_video_urls(url, fullmatch=True)):
@@ -121,10 +121,14 @@ def download_subtitles(url: str, file_format: str = "srt", language: str|None = 
     language = (language if language is not None else video_info.get("language")) or "en"
     manual_subs = video_info.get("subtitles", {})
     automatic_subs = video_info.get("automatic_captions", {})
-    if subs := manual_subs or automatic_subs:
-        matching = next((lang for lang in subs if lang.startswith(language)), None)
-    else:
-        raise RuntimeError(f"Video does not have subtitles: {url}")
+    if not (automatic_subs or manual_subs):
+        raise ValueError(f"{url} does not have subtitles")
+
+    matching_manual = next((lang for lang in manual_subs if lang.startswith(language)), None)
+    matching_automatic = next((lang for lang in automatic_subs if lang.startswith(language)), None)
+    matching = matching_manual or matching_automatic
+    if not matching:
+        raise ValueError(f"{url} does not have subtitles in the language {language}")
 
     result = _run_yt_dlp([
         "-P", f"subtitle:{output_dir}",

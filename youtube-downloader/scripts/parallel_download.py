@@ -27,6 +27,8 @@ def with_retry(max_retries: int = 3, retry_delay: float = 1.0, retry_on_exceptio
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    if "HTTP Error 429" in str(e):
+                        raise RuntimeError("HTTP Error 429: yt-dlp has hit a rate limit, retrying immediately generally does not work, please try again at a later time")
                     if attempt == max_retries:
                         raise
                     if retry_on_exceptions and not any(isinstance(e, exc_type) for exc_type in retry_on_exceptions):
@@ -40,20 +42,20 @@ def with_retry(max_retries: int = 3, retry_delay: float = 1.0, retry_on_exceptio
 def parallel_download(urls: list[str], func: Callable[[str], object|None], max_workers: int = 5) -> list[Result]:
     """Download multiple URLs in parallel."""
     results = []
-    
+
     def download(url: str) -> Result:
         try:
             filepath = func(url).resolve()
             return Result(url=url, success=True, filepath=filepath)
         except Exception as e:
             return Result(url=url, success=False, error=e)
-    
+
     if len(urls) == 1:
         return [download(urls[0])]
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(download, url) for url in urls]
         for future in concurrent.futures.as_completed(futures):
             results.append(future.result())
-    
+
     return results
