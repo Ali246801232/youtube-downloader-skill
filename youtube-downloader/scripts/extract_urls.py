@@ -56,20 +56,20 @@ _CHANNEL_URL_PATTERN = re.compile(
 def _finder(pattern: re.Pattern, template: str):
     @overload
     def find_urls(text: str, fullmatch: Literal[True]) -> str: ...
-    
+
     @overload
     def find_urls(text: str, fullmatch: Literal[False] = False) -> list[str]: ...
-    
+
     def find_urls(text: str, fullmatch: bool = False) -> str|list[str]:
         text = text.strip()
         if fullmatch:
             match = pattern.fullmatch(text)
             return template.format(match.group(1)) if match else None
-        
+
         matches = pattern.finditer(text)
         urls = [template.format(m.group(1)) for m in matches]
         return list(dict.fromkeys(urls))
-        
+
     return find_urls
 
 find_video_urls = _finder(_VIDEO_URL_PATTERN, "https://www.youtube.com/watch?v={}")

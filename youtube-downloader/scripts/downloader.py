@@ -5,6 +5,7 @@ import re
 import json
 import tempfile
 import subprocess
+import unicodedata
 from pathlib import Path
 
 from extract_urls import find_video_urls, find_playlist_urls, find_channel_urls
@@ -27,6 +28,17 @@ def _run_yt_dlp(args: list[str]) -> subprocess.CompletedProcess:
         raise FileNotFoundError("yt-dlp is not installed") from e
 
 
+def _sanitize_title(title: str) -> str:
+    """Return a given YouTube video title sanitized."""
+    sanitized = title
+    sanitized = unicodedata.normalize("NFKD", sanitized).encode("utf-8", "ignore").decode("utf-8")
+    sanitized = re.sub(r"[\/\\:*?\"<>|]", " ", sanitized)
+    sanitized = sanitized.strip("_. ")
+    if not sanitized:
+        return "untitled"
+    return sanitized
+
+
 def get_info(url: str) -> dict:
     """Return a YouTube video, playlist, or channel URL's metadata as a dict."""
     if match := find_video_urls(url, fullmatch=True):
@@ -44,10 +56,10 @@ def download_video(url: str, file_format: str, quality: str, output_dir: str|Pat
     """Download a YouTube video and return the file's path."""
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
-    
-    output_dir = Path(output_dir)
+
+    output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     p_pattern = r"^(144|240|360|480|540|720|1080|1440|2160|4320)p$"
     k_pattern = r"^(2|4|8)k$"
     k_to_p = {"2": "1440", "4": "2160", "8": "4320"}
@@ -64,19 +76,24 @@ def download_video(url: str, file_format: str, quality: str, output_dir: str|Pat
     else:
         raise ValueError(f"Invalid quality: {quality}")
 
-    result = _run_yt_dlp([
+    video_info = get_info(url)
+    title = _sanitize_title(video_info.get("title"))
+
+    _run_yt_dlp([
         "-P", str(output_dir),
-        "-o", f"%(title)s.%(ext)s",
+        "-o", f"{title}.%(ext)s",
         "-f", format_filter,
         "--merge-output-format", file_format,
-        "--print", "after_move:filepath",
+        "--remux-video", file_format,
         "--no-warnings",
         url,
     ])
-    
-    filepath = Path(result.stdout.strip())
 
-    return filepath
+    output_path = output_dir / f"{title}.{file_format}"
+    if output_path.exists() and output_path.is_file():
+        return output_path
+    raise RuntimeError(f"Failed to verify final output file for {url} at {output_path}")
+
 
 
 @with_retry(retry_on_exceptions=[RuntimeError])
@@ -85,27 +102,30 @@ def download_audio(url: str, file_format: str, quality: str, output_dir: str|Pat
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
 
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if quality == "best":
         quality = "0"
 
-    result = _run_yt_dlp([
+    video_info = get_info(url)
+    title = _sanitize_title(video_info.get("title"))
+
+    _run_yt_dlp([
         "-x",
         "-P", str(output_dir),
-        "-o", f"%(title)s.%(ext)s",
+        "-o", f"{title}.%(ext)s",
         "-f", f"ba[ext={file_format}] / ba / best",
         "--audio-format", file_format,
         "--audio-quality", quality,
-        "--print", "after_move:filepath",
         "--no-warnings",
         url,
     ])
-    
-    filepath = Path(result.stdout.strip())
 
-    return filepath
+    output_path = output_dir / f"{title}.{file_format}"
+    if output_path.exists() and output_path.is_file():
+        return output_path
+    raise RuntimeError(f"Failed to verify final output file for {url} at {output_path}")
 
 
 @with_retry(retry_on_exceptions=[RuntimeError])
@@ -114,7 +134,7 @@ def download_subtitles(url: str, file_format: str, output_dir: str|Path, languag
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
 
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     video_info = get_info(url)
@@ -130,25 +150,24 @@ def download_subtitles(url: str, file_format: str, output_dir: str|Path, languag
     if not matching:
         raise ValueError(f"{url} does not have subtitles in the language {language}")
 
-    result = _run_yt_dlp([
+    title = _sanitize_title(video_info.get("title"))
+
+    _run_yt_dlp([
         "-P", f"subtitle:{output_dir}",
-        "-o", f"subtitle:%(title)s.%(ext)s",
-        "--write-subs" if manual_subs else "--write-auto-subs",
+        "-o", f"subtitle:{title}.%(ext)s",
+        "--write-subs" if matching_manual else "--write-auto-subs",
         "--sub-langs", matching,
         "--sub-format", f"{file_format}/best",
         "--convert-subs", file_format,
-        "--print", "%(title)s",
-        "--no-simulate",
         "--skip-download",
         "--no-warnings",
         url,
     ])
 
-    title = result.stdout.strip()
-    filename = f"{title}.{matching}.{file_format}"
-    filepath = Path(output_dir) / filename
-
-    return filepath
+    output_path = output_dir / f"{title}.{matching}.{file_format}"
+    if output_path.exists() and output_path.is_file():
+        return output_path
+    raise RuntimeError(f"Failed to verify final output file for {url} at {output_path}")
 
 
 @with_retry(retry_on_exceptions=[RuntimeError])
@@ -158,17 +177,17 @@ def download_transcript(url: str, output_dir: str|Path, language: str|None = Non
         raise ValueError(f"{url} is not a YouTube video URL")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        srt_path = download_subtitles(url, output_dir=tmpdir, language=language, file_format="srt")
+        srt_path = download_subtitles(url, output_dir=tmpdir, file_format="srt", language=language)
         with open(srt_path, encoding="utf-8") as f:
             srt_lines = f.readlines()
 
-    txt_path = Path(output_dir) / srt_path.with_suffix(".txt").name
+    output_path = Path(output_dir).expanduser().resolve() / srt_path.with_suffix(".txt").name
 
     index_pattern = r"^\d+$"
     timestamp_pattern = r"\d{2,}:[0-5]\d:[0-5]\d,\d{3}"
     interval_pattern = rf"^{timestamp_pattern} --> {timestamp_pattern}$"
 
-    with open(txt_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         current_text = []
         for line in srt_lines:
             line = line.rstrip("\n")
@@ -180,4 +199,6 @@ def download_transcript(url: str, output_dir: str|Path, language: str|None = Non
         if current_text:
             f.write(" ".join(current_text) + "\n")
 
-    return txt_path
+    if output_path.exists() and output_path.is_file():
+        return output_path
+    raise RuntimeError(f"Failed to verify final output file for {url} at {output_path}")
