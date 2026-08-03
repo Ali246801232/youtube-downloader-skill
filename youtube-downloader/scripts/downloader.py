@@ -40,7 +40,7 @@ def get_info(url: str) -> dict:
 
 
 @with_retry(retry_on_exceptions=[RuntimeError])
-def download_video(url: str, file_format: str = "mp4", quality: str = "best", output_dir: str|Path = ".") -> Path:
+def download_video(url: str, file_format: str, quality: str, output_dir: str|Path) -> Path:
     """Download a YouTube video and return the file's path."""
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
@@ -79,8 +79,8 @@ def download_video(url: str, file_format: str = "mp4", quality: str = "best", ou
     return filepath
 
 
-@with_retry()
-def download_audio(url: str, file_format: str = "mp3", quality: str = "best", output_dir: str|Path = ".") -> Path:
+@with_retry(retry_on_exceptions=[RuntimeError])
+def download_audio(url: str, file_format: str, quality: str, output_dir: str|Path) -> Path:
     """Download the audio of a YouTube video and return the file's path."""
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
@@ -108,8 +108,8 @@ def download_audio(url: str, file_format: str = "mp3", quality: str = "best", ou
     return filepath
 
 
-@with_retry()
-def download_subtitles(url: str, file_format: str = "srt", language: str|None = None, output_dir: str|Path = ".") -> Path:
+@with_retry(retry_on_exceptions=[RuntimeError])
+def download_subtitles(url: str, file_format: str, output_dir: str|Path, language: str|None = None) -> Path:
     """Download the subtitles of a YouTube video and return the file's path."""
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")
@@ -151,8 +151,8 @@ def download_subtitles(url: str, file_format: str = "srt", language: str|None = 
     return filepath
 
 
-@with_retry()
-def download_transcript(url: str, language: str|None = None, output_dir: str|Path = ".") -> Path:
+@with_retry(retry_on_exceptions=[RuntimeError])
+def download_transcript(url: str, output_dir: str|Path, language: str|None = None) -> Path:
     """Download a plain-text transcript from a YouTube video."""
     if not (url := find_video_urls(url, fullmatch=True)):
         raise ValueError(f"{url} is not a YouTube video URL")

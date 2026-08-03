@@ -37,6 +37,13 @@ def _report_results(results: list[Result]):
             print(f"[ERROR] {result.url}  with error  {result.error}", file=sys.stderr)
 
 
+def _add_common_download_args(parser: argparse.ArgumentParser):
+    parser.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
+    parser.add_argument("--output-dir", "-o", default=".", help="Output directory")
+    parser.add_argument("--expand-playlists", action="store_true", help="Expand playlist URLs found inside text or files; standalone playlist URL arguments are unaffected and expaned regardless")
+    parser.add_argument("--max-workers", default=5, help="Maximum number of downloads in parallel at once")
+
+
 def cmd_test_deps(_args):
     try:
         test_deps()
@@ -96,43 +103,31 @@ def main():
     parser = argparse.ArgumentParser(description="YouTube Downloader Skill")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    p = subparsers.add_parser("test-deps", help="Check if yt-dlp and ffmpeg are installed")
+    p = subparsers.add_parser("test-deps", help="Check if yt-dlp and ffmpeg are installed", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    p = subparsers.add_parser("info", help="Output the YouTube URL metadata as JSON or a specific field from it")
+    p = subparsers.add_parser("info", help="Output the YouTube URL metadata as JSON or a specific field from it", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument("url", help="YouTube video, playlist, or channel URL")
     p.add_argument("--field", help="Specifc field to output instead of entire metadata: title, description, duration, etc.")
     p.add_argument("--output-file", "-o", help="File to write output to instead of stdout")
 
-    p = subparsers.add_parser("video", help="Download one or more YouTube videos in parallel")
-    p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
-    p.add_argument("--file-format", "-f", default="mp4", help="Video file format: mp4, webm, mkv, etc. (default: mp4)")
-    p.add_argument("--quality", "-q", default="best", help="Video quality (resolution): best, 720p, 1080p, 4k, etc. (default: best)")
-    p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
-    p.add_argument("--expand-playlists", action="store_true", help="Expand playlist URLs found inside text or files; standalone playlist URL arguments are unaffected and expaned regardless (default=False)")
-    p.add_argument("--max-workers", default=5, help="Maximum number of downloads in parallel at once (default=5)")
+    p = subparsers.add_parser("video", help="Download one or more YouTube videos in parallel", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    _add_common_download_args(p)
+    p.add_argument("--file-format", "-f", default="mp4", help="Video file format: mp4, webm, mkv, etc.")
+    p.add_argument("--quality", "-q", default="best", help="Video quality (resolution): best, 720p, 1080p, 4k, etc.")
 
-    p = subparsers.add_parser("audio", help="Download audio from one or more YouTube videos in parallel")
-    p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
-    p.add_argument("--file-format", "-f", default="mp3", help="Audio file format: mp3, m4a, wav, etc. (default: mp3)")
-    p.add_argument("--quality", "-q", default="best", help="Audio quality (bitrate): best, 128K, 192K, 256K, 320K, etc. (default: best)")
-    p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
-    p.add_argument("--expand-playlists", action="store_true", help="Expand playlist URLs found inside text or files; standalone playlist URL arguments are unaffected and expaned regardless (default=False)")
-    p.add_argument("--max-workers", default=5, help="Maximum number of downloads in parallel at once (default=5)")
+    p = subparsers.add_parser("audio", help="Download audio from one or more YouTube videos in parallel", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    _add_common_download_args(p)
+    p.add_argument("--file-format", "-f", default="mp3", help="Audio file format: mp3, m4a, wav, etc.")
+    p.add_argument("--quality", "-q", default="best", help="Audio quality (bitrate): best, 128K, 192K, 256K, 320K, etc.")
 
-    p = subparsers.add_parser("subtitles", help="Download subtitles from one or more YouTube videos in parallel")
-    p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
-    p.add_argument("--file-format", "-f", default="srt", help="Subtitles file format: srt, vtt, ttml, etc. (default: srt)")
-    p.add_argument("--language", "-l", help="Language code: en, en.GB, jp, etc. (default: auto-detect primary language from video)")
-    p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
-    p.add_argument("--expand-playlists", action="store_true", help="Expand playlist URLs found inside text or files; standalone playlist URL arguments are unaffected and expaned regardless (default=False)")
-    p.add_argument("--max-workers", default=5, help="Maximum number of downloads in parallel at once (default=5)")
+    p = subparsers.add_parser("subtitles", help="Download subtitles from one or more YouTube videos in parallel", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    _add_common_download_args(p)
+    p.add_argument("--file-format", "-f", default="srt", help="Subtitles file format: srt, vtt, ttml, etc.")
+    p.add_argument("--language", "-l", default=argparse.SUPPRESS, help="Language code: en, en.GB, ja, etc. (default: auto-detect primary language from video)")
 
-    p = subparsers.add_parser("transcript", help="Download plain-text transcripts for one or more YouTube videos in parallel")
-    p.add_argument("urls", nargs="+", help="Video URLs, playlist URLs, or file paths to extract URLs from")
-    p.add_argument("--language", "-l", help="Language code: en, en.GB, jp, etc. (default: auto-detect primary language from video)")
-    p.add_argument("--output-dir", "-o", default=".", help="Output directory (default: .)")
-    p.add_argument("--expand-playlists", action="store_true", help="Expand playlist URLs found inside text or files; standalone playlist URL arguments are unaffected and expaned regardless (default=False)")
-    p.add_argument("--max-workers", default=5, help="Maximum number of downloads in parallel at once (default=5)")
+    p = subparsers.add_parser("transcript", help="Download plain-text transcripts for one or more YouTube videos in parallel", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    _add_common_download_args(p)
+    p.add_argument("--language", "-l", default=argparse.SUPPRESS, help="Language code: en, en.GB, ja, etc. (default: auto-detect primary language from video)")
 
     args = parser.parse_args()
 
