@@ -1,7 +1,22 @@
 #!/usr/bin/env python3
 """Test that the dependencies required for the skill are present."""
 
+import sys
 import subprocess
+
+
+REQUIRED_PYTHON = (3, 10)
+def test_python_version():
+    f"""Check if Python version meets requirement."""
+    current = sys.version_info[:3]
+    version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    if current >= REQUIRED_PYTHON:
+        print(f"[OK]    Python meets requirement: version {version}")
+        return True
+    else:
+        print(f"[ERROR] Python is too old: {version} < {REQUIRED_PYTHON[0]}.{REQUIRED_PYTHON[1]}+")
+        print(f"        Install from: https://www.python.org/downloads/")
+        return False
 
 
 def test_yt_dlp_installed():
@@ -33,17 +48,18 @@ def test_ffmpeg_installed():
             print("[ERROR] ffmpeg -version failed")
             return False
     except FileNotFoundError:
-        print("[ERROR] ffmpeg is not installed (required for format conversion)")
+        print("[ERROR] ffmpeg is not installed")
         print("        Install with: `winget install ffmpeg` (Windows), `brew install ffmpeg` (macOS), or `apt install ffmpeg` (Linux)")
         return False
 
 
 def test_deps():
+    python_ok = test_python_version()
     yt_dlp_ok = test_yt_dlp_installed()
     ffmpeg_ok = test_ffmpeg_installed()
 
-    if yt_dlp_ok and ffmpeg_ok:
+    if python_ok and yt_dlp_ok and ffmpeg_ok:
         print("[OK]    Dependencies look good!")
         print("        The skill is ready to use")
     else:
-        print("[ERROR] Please install missing dependencies before using the skill.")
+        print("[ERROR] Please install or update the required dependencies before using the skill.")

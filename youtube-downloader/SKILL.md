@@ -1,6 +1,8 @@
 ---
 name: youtube-downloader
 description: Download videos, audios, subtitles, and transcripts from YouTube videos and playlists using yt-dlp. Use when the user provides a YouTube video or playlist URL, asks to download videos, or when the conversation involves YouTube URLs.
+license: MIT License. ../LICENSE has complete term
+compatibility: Requires Python 3.10+, yt-dlp, and FFmpeg.
 ---
 
 # yt-dlp Video Downloader Skill
